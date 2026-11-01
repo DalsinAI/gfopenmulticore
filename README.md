@@ -115,6 +115,16 @@ the time, and 0 turns polling off, for measuring. Any other board, a
 Cradle on the LAN, and the main CPU with no board (a real 68040) are
 exactly as in 0.4.
 
+## openmulticore.library 0.6
+
+0.6 (1 November 2026) stops reading the user's settings for every job.
+A job left to the library used to read two variables
+(`ENV:OpenMulticore/Apps/<program>` and `ENV:OpenMulticore/Core`), each a
+few packets to ENV:'s handler, before it started. 0.6 keeps what it read
+and asks DOS to tell it when anything in `ENV:OpenMulticore` or its
+`Apps` drawer changes; the next job after a change reads them again. A
+plain task (not a process) still reads them for each job. No call changes.
+
 ## Licence and credit
 
 OpenMulticore is free software under the MIT licence (`LICENSE`,
