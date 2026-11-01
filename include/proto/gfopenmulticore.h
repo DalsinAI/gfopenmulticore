@@ -1,4 +1,4 @@
-/* Copyright (c) 2026 AmigaChrome Team. GFOpenMulticore, MIT licence (LICENSE). */
+/* Copyright (c) 2026 AmiCradle Team. GFOpenMulticore, MIT licence (LICENSE). */
 #ifndef _PROTO_OPENMULTICORE_H
 #define _PROTO_OPENMULTICORE_H
 #include <exec/types.h>

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2026 AmigaChrome Team. GFOpenMulticore, MIT licence (LICENSE).
+# Copyright (c) 2026 AmiCradle Team. GFOpenMulticore, MIT licence (LICENSE).
 # SPDX-License-Identifier: MIT
 # gfopenmulticore.library (bare: no startup code or C library; its RomTag's
 # stub comes first), OMCTest and OMCBench, with the os32 stove (bebbo's m68k-amigaos-gcc).

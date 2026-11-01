@@ -1,8 +1,8 @@
-/* Copyright (c) 2026 AmigaChrome Team. GFOpenMulticore, MIT licence (LICENSE).
+/* Copyright (c) 2026 AmiCradle Team. GFOpenMulticore, MIT licence (LICENSE).
  * SPDX-License-Identifier: MIT
  *
  * gfopenmulticore.library 0.2 (DESIGN.md sections 0 and 4). It runs a 68k
- * function on a core of a cores board (AmiCradle's, an AmigaChrome Team $DA15
+ * function on a core of a cores board (AmiCradle's, an AmiCradle Team $DA15
  * board carrying the ACSV block, CLASS 2, product 7) through
  * gfopenservice.device's cpu.m68k/1 service, or on the main CPU when there is
  * no board, the same function either way. A caller may name the core
@@ -139,7 +139,7 @@ struct Device *TimerBase;           /* ReadEClock's (0.5): set while the connect
 int start(void) { return -1; }      /* run as a program: nothing (stays first in the file) */
 
 static const char lib_name[] = OPENMULTICORE_NAME;
-static const char lib_id[] = "gfopenmulticore.library 0.6 (01.11.2026) GFOpenMulticore, AmigaChrome Team\r\n";
+static const char lib_id[] = "gfopenmulticore.library 0.6 (01.11.2026) GFOpenMulticore, AmiCradle Team\r\n";
 static const char service_name[] = "cpu.m68k/1";
 
 static struct Library *lib_init(REG(d0, struct OMCBase *base), REG(a0, BPTR seglist), REG(a6, struct ExecBase *sys));
