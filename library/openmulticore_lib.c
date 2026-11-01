@@ -26,6 +26,9 @@
  * path (bit 18): such a board publishes a completion as soon as it is read
  * while one waits, so a short job is collected without a task switch.
  * Every other board, the LAN and the main CPU are as in 0.4.
+ * 0.6 keeps the ENV:OpenMulticore settings a job reads (Core, Apps/<program>)
+ * instead of reading two variables for every job, and reads them again when
+ * DOS notification says ENV:OpenMulticore or its Apps drawer changed.
  *
  * Built bare by library/build.sh (no startup code, no C library).
  */
@@ -42,6 +45,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/var.h>
+#include <dos/notify.h>
 #include <libraries/configvars.h>
 #include <devices/timer.h>
 #include <proto/exec.h>
@@ -55,7 +59,7 @@
 
 #define REG(r, decl) register decl __asm(#r)   /* bebbo gcc: an argument in a register */
 #define LIB_VERSION 0
-#define LIB_REVISION 5
+#define LIB_REVISION 6
 
 #define AMIGACHROME_MFR        0xDA15
 #define CORES_PRODUCT 7
@@ -99,6 +103,9 @@
 
 #define GRANT_MAGIC 0x4F4D4347UL    /* 'OMCG': OMC_AllocGrant's header, just below the memory */
 
+#define ENV_APPS 8                  /* 0.6: programs whose Apps/<program> setting is kept */
+#define ENV_NOLINE 0xFFFFFFFEUL     /* an env_app's target: no OMC_CORE line, so Core decides */
+
 struct OMCBase {
     struct Library lib;
     BPTR seglist;
@@ -114,6 +121,15 @@ struct OMCBase {
     volatile UBYTE *fast;           /* the board's registers, or NULL: no polling, as 0.4 */
     ULONG poll_ticks;               /* how long to poll, in E-clock ticks */
     struct timerequest *timer;      /* timer.device, opened for ReadEClock */
+    /* 0.6: the ENV:OpenMulticore settings a job reads, kept until DOS notification says they changed */
+    struct SignalSemaphore envsem;
+    struct MsgPort envport;         /* PA_IGNORE: the notifications wait here, nobody is signalled */
+    struct NotifyRequest envnr[2];  /* ENV:OpenMulticore, ENV:OpenMulticore/Apps */
+    LONG env_state;                 /* 0 not watched, 1 watched, -1 could not watch (tried again after the last close) */
+    UBYTE env_core_ok;              /* env_core is Core's value */
+    ULONG env_core;
+    ULONG env_napps, env_next;
+    struct { ULONG target; char name[64]; } env_app[ENV_APPS];
 };
 
 struct ExecBase *SysBase;
@@ -123,7 +139,7 @@ struct Device *TimerBase;           /* ReadEClock's (0.5): set while the connect
 int start(void) { return -1; }      /* run as a program: nothing (stays first in the file) */
 
 static const char lib_name[] = OPENMULTICORE_NAME;
-static const char lib_id[] = "openmulticore.library 0.5 (21.10.2026) OpenMulticore, AmigaChrome Team\r\n";
+static const char lib_id[] = "openmulticore.library 0.6 (01.11.2026) OpenMulticore, AmigaChrome Team\r\n";
 static const char service_name[] = "cpu.m68k/1";
 
 static struct Library *lib_init(REG(d0, struct OMCBase *base), REG(a0, BPTR seglist), REG(a6, struct ExecBase *sys));
@@ -175,6 +191,13 @@ static struct Library *lib_init(REG(d0, struct OMCBase *base), REG(a0, BPTR segl
     base->dos = OpenLibrary("dos.library", 37);
     DOSBase = (struct DosLibrary *)base->dos;
     InitSemaphore(&base->sem);
+    InitSemaphore(&base->envsem);
+    base->envport.mp_Node.ln_Type = NT_MSGPORT;
+    base->envport.mp_Flags = PA_IGNORE;
+    base->envport.mp_MsgList.lh_Head = (struct Node *)&base->envport.mp_MsgList.lh_Tail;   /* NewList, which is amiga.lib's */
+    base->envport.mp_MsgList.lh_Tail = NULL;
+    base->envport.mp_MsgList.lh_TailPred = (struct Node *)&base->envport.mp_MsgList.lh_Head;
+    base->envport.mp_MsgList.lh_Type = NT_MESSAGE;
     return &base->lib;
 }
 static struct Library *lib_open(REG(a6, struct OMCBase *base))
@@ -184,10 +207,12 @@ static struct Library *lib_open(REG(a6, struct OMCBase *base))
     return &base->lib;
 }
 static void conn_close(struct OMCBase *base);
+static void env_close(struct OMCBase *base);
 static BPTR lib_close(REG(a6, struct OMCBase *base))
 {
     base->lib.lib_OpenCnt--;
     if (base->lib.lib_OpenCnt == 0) conn_close(base);   /* no program has a job any more: the connection goes */
+    if (base->lib.lib_OpenCnt == 0) env_close(base);    /* and the settings' notifications, from a process */
     if (base->lib.lib_OpenCnt == 0 && (base->lib.lib_Flags & LIBF_DELEXP))
         return lib_expunge(base);
     return 0;
@@ -195,7 +220,7 @@ static BPTR lib_close(REG(a6, struct OMCBase *base))
 static BPTR lib_expunge(REG(a6, struct OMCBase *base))
 {
     BPTR seglist;
-    if (base->lib.lib_OpenCnt) { base->lib.lib_Flags |= LIBF_DELEXP; return 0; }
+    if (base->lib.lib_OpenCnt || base->env_state == 1) { base->lib.lib_Flags |= LIBF_DELEXP; return 0; }   /* notifications still point here */
     seglist = base->seglist;
     Remove(&base->lib.lib_Node);
     if (base->dos) CloseLibrary(base->dos);
@@ -805,14 +830,99 @@ static ULONG parse_target(const char *s)
     return a && b && b <= 31 ? OMC_CORE(a, b) : OMC_ANY;
 }
 
+/* The program's Apps/<program> setting: the target of its OMC_CORE line, or
+ * ENV_NOLINE (no variable, or no such line). */
+static ULONG read_app(const char *name)
+{
+    char path[96], buf[160];
+    const char *pre = "OpenMulticore/Apps/";
+    int i = 0, j = 0;
+    while (pre[j]) path[i++] = pre[j++];
+    for (j = 0; name[j] && i < 95; ) path[i++] = name[j++];
+    path[i] = 0;
+    if (GetVar((STRPTR)path, (STRPTR)buf, sizeof buf, GVF_GLOBAL_ONLY) > 0) {
+        for (char *p = buf; *p; p++)
+            if ((p == buf || p[-1] == '\n') && p[0] == 'O' && p[1] == 'M' && p[2] == 'C' && p[3] == '_' &&
+                p[4] == 'C' && p[5] == 'O' && p[6] == 'R' && p[7] == 'E' && (p[8] == '=' || p[8] == ' '))
+                return parse_target(p + 9);
+    }
+    return ENV_NOLINE;
+}
+
+/* Core's target, or OMC_ANY when it is not set. */
+static ULONG read_core(void)
+{
+    char buf[160];
+    if (GetVar((STRPTR)"OpenMulticore/Core", (STRPTR)buf, sizeof buf, GVF_GLOBAL_ONLY) > 0) return parse_target(buf);
+    return OMC_ANY;
+}
+
+/* Our notifications on ENV:OpenMulticore and its Apps drawer ended, and any
+ * of their messages given back. */
+static void env_unwatch(struct OMCBase *base)
+{
+    struct Message *m;
+    while ((m = GetMsg(&base->envport))) ReplyMsg(m);   /* given back while their requests still stand */
+    for (int k = 0; k < 2; k++)
+        if (base->envnr[k].nr_Name) { EndNotify(&base->envnr[k]); base->envnr[k].nr_Name = NULL; }
+    while ((m = GetMsg(&base->envport))) ReplyMsg(m);
+}
+
+/* Under envsem, from a process: 1 when the kept settings may be used (the
+ * notifications are on, and none has come since they were read), else 0 (read
+ * them each time, as 0.5 did). The first call, and any after a change, starts
+ * the notifications again before anything is read, so a change made while
+ * reading is not missed; and again so an Apps drawer made since is watched. */
+static LONG env_watch(struct OMCBase *base)
+{
+    static const char *const names[2] = { "ENV:OpenMulticore", "ENV:OpenMulticore/Apps" };
+    if (base->env_state < 0) return 0;
+    if (base->env_state == 1 && !base->envport.mp_MsgList.lh_Head->ln_Succ) return 1;   /* nothing changed */
+    env_unwatch(base);
+    base->env_state = -1;
+    base->env_core_ok = 0;
+    base->env_napps = base->env_next = 0;
+    for (int k = 0; k < 2; k++) {
+        zero(&base->envnr[k], sizeof base->envnr[k]);
+        base->envnr[k].nr_Name = (UBYTE *)names[k];
+        base->envnr[k].nr_Flags = NRF_SEND_MESSAGE | NRF_WAIT_REPLY;
+        base->envnr[k].nr_stuff.nr_Msg.nr_Port = &base->envport;
+        if (!StartNotify(&base->envnr[k])) {
+            base->envnr[k].nr_Name = NULL;
+            env_unwatch(base);
+            return 0;                                    /* not watched: no keeping (tried again after the last close) */
+        }
+    }
+    base->env_state = 1;
+    return 1;
+}
+
+/* The last program has closed the library: the notifications end (they need
+ * a process; else they stay, and expunge waits for a close that can end them). */
+static void env_close(struct OMCBase *base)
+{
+    struct Process *pr = (struct Process *)FindTask(NULL);
+    if (pr->pr_Task.tc_Node.ln_Type != NT_PROCESS) return;
+    ObtainSemaphore(&base->envsem);
+    env_unwatch(base);
+    base->env_state = 0;
+    base->env_core_ok = 0;
+    base->env_napps = base->env_next = 0;
+    ReleaseSemaphore(&base->envsem);
+}
+
 /* The user's choice for this program (PLACEMENT.md section 6), for jobs that
  * leave it to the library: ENV:OpenMulticore/Apps/<program>, a line
- * OMC_CORE=..., else ENV:OpenMulticore/Core. */
+ * OMC_CORE=..., else ENV:OpenMulticore/Core. 0.6 keeps both (Core, and
+ * Apps/<program> for the last ENV_APPS programs) while DOS notification says
+ * nothing in ENV:OpenMulticore changed: 0.5 read two variables, each a few
+ * packets to ENV:'s handler, for every job. A plain task (no notification
+ * without a process) reads them each time, as 0.5. */
 static ULONG user_target(struct OMCBase *base)
 {
-    char name[64], path[96], buf[160];
+    char name[64], buf[160];
     struct Process *pr = (struct Process *)FindTask(NULL);
-    LONG n;
+    ULONG t;
     if (!base->dos) return OMC_ANY;
     name[0] = 0;
     if (pr->pr_Task.tc_Node.ln_Type == NT_PROCESS && pr->pr_CLI) {
@@ -828,21 +938,41 @@ static ULONG user_target(struct OMCBase *base)
         while (f[i] && i < 63) { name[i] = f[i]; i++; }
         name[i] = 0;
     }
-    if (name[0]) {
-        const char *pre = "OpenMulticore/Apps/";
-        int i = 0, j = 0;
-        while (pre[j]) path[i++] = pre[j++];
-        for (j = 0; name[j] && i < 95; ) path[i++] = name[j++];
-        path[i] = 0;
-        if ((n = GetVar((STRPTR)path, (STRPTR)buf, sizeof buf, GVF_GLOBAL_ONLY)) > 0) {
-            for (char *p = buf; *p; p++)
-                if ((p == buf || p[-1] == '\n') && p[0] == 'O' && p[1] == 'M' && p[2] == 'C' && p[3] == '_' &&
-                    p[4] == 'C' && p[5] == 'O' && p[6] == 'R' && p[7] == 'E' && (p[8] == '=' || p[8] == ' '))
-                    return parse_target(p + 9);
+    if (pr->pr_Task.tc_Node.ln_Type != NT_PROCESS) {
+        t = name[0] ? read_app(name) : ENV_NOLINE;
+        return t != ENV_NOLINE ? t : read_core();
+    }
+    ObtainSemaphore(&base->envsem);
+    if (!env_watch(base)) {
+        t = name[0] ? read_app(name) : ENV_NOLINE;
+        if (t == ENV_NOLINE) t = read_core();
+    } else {
+        t = ENV_NOLINE;
+        if (name[0]) {
+            ULONG k;
+            for (k = 0; k < base->env_napps; k++) {
+                const char *a = base->env_app[k].name;
+                int i = 0;
+                while (a[i] && a[i] == name[i]) i++;
+                if (a[i] == name[i]) break;
+            }
+            if (k < base->env_napps) t = base->env_app[k].target;
+            else {
+                int i = 0;
+                t = read_app(name);
+                k = base->env_napps < ENV_APPS ? base->env_napps++ : base->env_next++ % ENV_APPS;
+                base->env_app[k].target = t;
+                while (name[i]) { base->env_app[k].name[i] = name[i]; i++; }
+                base->env_app[k].name[i] = 0;
+            }
+        }
+        if (t == ENV_NOLINE) {
+            if (!base->env_core_ok) { base->env_core = read_core(); base->env_core_ok = 1; }
+            t = base->env_core;
         }
     }
-    if ((n = GetVar((STRPTR)"OpenMulticore/Core", (STRPTR)buf, sizeof buf, GVF_GLOBAL_ONLY)) > 0) return parse_target(buf);
-    return OMC_ANY;
+    ReleaseSemaphore(&base->envsem);
+    return t;
 }
 
 /* Starts the job where it goes. 0, or an OMCERR_ (the job's status too). */
