@@ -6,8 +6,8 @@ Version:      0.1
 Architecture: m68k-amigaos >= 3.2.0
 Distribution: Aminet
 
-OpenMulticore is an open specification for presenting extra processor cores to
-AmigaOS, and openmulticore.library, which programs open to run work on them.
+GFOpenMulticore is an open specification for presenting extra processor cores to
+AmigaOS, and gfopenmulticore.library, which programs open to run work on them.
 The motherboard CPU keeps Exec and the custom chips; extra cores run jobs in
 shared memory and hand anything the OS must do back to it.
 
@@ -24,13 +24,13 @@ with completion signals, a one-call way to run a 68k function on another core,
 and batches of maths. powerpc.library and ppc.library (WarpOS and PowerUP) can
 sit on top as faces when a PowerPC core exists.
 
-Status: this archive is the specification. The library and AmigaChrome's board
-follow; AmigaChrome (an Amiga on x86 and ARM64 cores) implements it first,
+Status: this archive is the specification. The library and AmiCradle's board
+follow; AmiCradle (an Amiga on x86 and ARM64 cores) implements it first,
 with 68k cores that run on them.
 
 Free software under the MIT licence, Copyright (c) 2026 AmigaChrome Team. Use
 it, change it, fork it and ship it; keep the copyright notice and the licence
-with every copy. If you build on it, please say it is based on OpenMulticore
+with every copy. If you build on it, please say it is based on GFOpenMulticore
 by the AmigaChrome Team.
 
 Source: https://github.com/DalsinAI/openamigamulticore

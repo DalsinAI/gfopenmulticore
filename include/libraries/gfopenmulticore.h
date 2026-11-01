@@ -1,9 +1,9 @@
-/* openmulticore.library 0.5: run 68k functions on extra cores, or on the
+/* gfopenmulticore.library 0.5: run 68k functions on extra cores, or on the
  * main CPU when there are none (DESIGN.md sections 0 and 4). 0.2 adds
  * OMC_JobInit, OMC_AddGrant, OMC_AllocGrant, OMC_FreeGrant and
  * OMC_SetSignal; 0.3 adds OMC_SubmitRange and OMC_RunRange; 0.4 adds
  * OMCF_PAGES; 0.5 polls a fast board briefly before a wait sleeps, with no
- * new calls (library/openmulticore.doc).
+ * new calls (library/gfopenmulticore.doc).
  * MIT, Copyright (c) 2026 AmigaChrome Team. */
 #ifndef LIBRARIES_OPENMULTICORE_H
 #define LIBRARIES_OPENMULTICORE_H
@@ -12,7 +12,7 @@
 #include <exec/tasks.h>
 #include <exec/libraries.h>
 
-#define OPENMULTICORE_NAME    "openmulticore.library"
+#define OPENMULTICORE_NAME    "gfopenmulticore.library"
 #define OPENMULTICORE_VERSION 0
 #define OPENMULTICORE_REVISION_JOBCALLS 2   /* 0.2: the five calls below */
 #define OPENMULTICORE_REVISION_RANGE    3   /* 0.3: OMC_SubmitRange, OMC_RunRange */
@@ -78,7 +78,7 @@ struct OMCGrant {
 #define OMCERR_NOCORE  (-20)       /* no core that can run it (a named core that isn't there) */
 #define OMCERR_BUSY    (-21)       /* the named core is busy and OMCF_NOWAIT was set */
 #define OMCERR_NOMEM   (-22)
-#define OMCERR_LOST    (-23)       /* openservice.device lost the board */
+#define OMCERR_LOST    (-23)       /* gfopenservice.device lost the board */
 #define OMCERR_BADGRANT (-24)      /* OMC_AddGrant: no address or length, no mode, a written grant off a cache line, or overlapping a written one */
 #define OMCERR_CHIPRAM  (-25)      /* OMC_AddGrant: Chip RAM for a job that must run on a board */
 #define OMCERR_NOSLOT   (-26)      /* OMC_AddGrant: OMC_MAXGRANTS grants, or OMC_MAXWRITTEN written ones, already */

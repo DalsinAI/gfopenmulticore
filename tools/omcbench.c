@@ -1,13 +1,13 @@
-/* Copyright (c) 2026 AmigaChrome Team. OpenMulticore, MIT licence (LICENSE).
+/* Copyright (c) 2026 AmigaChrome Team. GFOpenMulticore, MIT licence (LICENSE).
  * OMCBench: what work is worth sending to a cores board, measured
  * (DESIGN.md section 5, W3). Four tables:
  *   1. the cost of an empty job: on the main CPU; on a board, one at a time
- *      and many in flight; what 0.2 added to every job (openservice.device
+ *      and many in flight; what 0.2 added to every job (gfopenservice.device
  *      opened, OPEN, WHERE, CLOSE, closed again); an empty RANGE index;
  *   2. break-even: a job of n turns of a loop on the main CPU against one
  *      board core, n from 0 to 1,000,000;
  *   3. throughput: ITEMS work items on the main CPU, as separate jobs, and
- *      as one range on 1, 2, 4 ... cores (ENV:OpenMulticore/RangeCores,
+ *      as one range on 1, 2, 4 ... cores (ENV:GFOpenMulticore/RangeCores,
  *      read by the library when it makes its connection);
  *   4. the main CPU while every core works: a loop's speed against idle.
  * Times by the E-clock (timer.device). STRICT: every job strict (it reads
@@ -26,8 +26,8 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/timer.h>
-#include <proto/openmulticore.h>
-#include <devices/openservice.h>   /* openamigaservice's include/: 0.2's per-job connection, timed alone */
+#include <proto/gfopenmulticore.h>
+#include <devices/gfopenservice.h>   /* openamigaservice's include/: 0.2's per-job connection, timed alone */
 
 struct Library *OpenMulticoreBase;
 struct Device *TimerBase;
@@ -60,8 +60,8 @@ static void reopen(void)                    /* drops the library's connection (w
 static void range_cores(ULONG n)            /* 0: unset */
 {
     char buf[12];
-    if (!n) DeleteVar((STRPTR)"OpenMulticore/RangeCores", GVF_GLOBAL_ONLY);
-    else { int i = 11; buf[i] = 0; do buf[--i] = (char)('0' + n % 10); while ((n /= 10)); SetVar((STRPTR)"OpenMulticore/RangeCores", (STRPTR)buf + i, -1, GVF_GLOBAL_ONLY); }
+    if (!n) DeleteVar((STRPTR)"GFOpenMulticore/RangeCores", GVF_GLOBAL_ONLY);
+    else { int i = 11; buf[i] = 0; do buf[--i] = (char)('0' + n % 10); while ((n /= 10)); SetVar((STRPTR)"GFOpenMulticore/RangeCores", (STRPTR)buf + i, -1, GVF_GLOBAL_ONLY); }
     reopen();
 }
 
@@ -286,14 +286,14 @@ int main(void)
     if (OpenDevice((STRPTR)TIMERNAME, UNIT_ECLOCK, (struct IORequest *)&treq, 0)) { PutStr((STRPTR)"no timer.device\n"); return 20; }
     TimerBase = treq.tr_node.io_Device;
     if (!(OpenMulticoreBase = OpenLibrary((STRPTR)OPENMULTICORE_NAME, 0)) || !OMC_HAS_RANGE(OpenMulticoreBase)) {
-        PutStr((STRPTR)"OMCBench needs openmulticore.library 0.3\n");
+        PutStr((STRPTR)"OMCBench needs gfopenmulticore.library 0.3\n");
         if (OpenMulticoreBase) CloseLibrary(OpenMulticoreBase);
         CloseDevice((struct IORequest *)&treq);
         return 20;
     }
     if (!(out = OMC_AllocGrant(256 * 16, OMCAF_CLEAR | OMCAF_PAGE))) return 20;   /* pages of its own, apart from the code */
     units = OMC_CoreCount();
-    Printf((STRPTR)"OMCBench: openmulticore.library %ld.%ld, %ld cores on the board, %s jobs\n\n", (LONG)OpenMulticoreBase->lib_Version,
+    Printf((STRPTR)"OMCBench: gfopenmulticore.library %ld.%ld, %ld cores on the board, %s jobs\n\n", (LONG)OpenMulticoreBase->lib_Version,
            (LONG)OpenMulticoreBase->lib_Revision, units, (LONG)(pages ? "strict, page grants" : strict ? "strict" : "permissive"));
     empty_costs(jobs);
     break_even(out);

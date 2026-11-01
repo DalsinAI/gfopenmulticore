@@ -1,4 +1,4 @@
-<!-- OpenMulticore placement framework, written 4 October 2026. Copyright (c) 2026 AmigaChrome Team, MIT licence (LICENSE). -->
+<!-- GFOpenMulticore placement framework, written 4 October 2026. Copyright (c) 2026 AmigaChrome Team, MIT licence (LICENSE). -->
 
 # Placing applications on cores
 
@@ -62,7 +62,7 @@ instruction set, a feature the code can't run without).
 
 1. **The binary itself**: what the code needs, read from the file (sections 3
    and 4). This is the only source of requirements.
-2. **The application's settings**: `ENVARC:OpenMulticore/Apps/<name>`, written
+2. **The application's settings**: `ENVARC:GFOpenMulticore/Apps/<name>`, written
    by the user or by an installer, one line per keyword (section 6).
 3. **Tooltypes**, when Workbench starts it (section 6).
 4. **The command line**: `OMCRun` arguments (section 6).
@@ -95,15 +95,15 @@ program's author:
 | `PT_LOAD` segments | Memory to allocate, with read, write and execute per segment. |
 | Dynamic symbols | Named entry points, which is how kernels are found (section 5). |
 
-So an ordinary ARM or PowerPC ELF, built with no OpenMulticore knowledge at
+So an ordinary ARM or PowerPC ELF, built with no GFOpenMulticore knowledge at
 all, already tells the loader its core kind and most of its feature needs.
 What it doesn't say is how it starts and how it reaches the OS: a Linux ARM
 executable has the right `e_machine` and the wrong everything else. That is
 what the face note is for.
 
-**What OpenMulticore adds: one note.** A `PT_NOTE` segment (and, for linkers
+**What GFOpenMulticore adds: one note.** A `PT_NOTE` segment (and, for linkers
 that keep sections, a `.note.openmulticore` section) holding ELF notes whose
-owner name is `"OpenMulticore"`. The name scopes the type numbers, so they
+owner name is `"GFOpenMulticore"`. The name scopes the type numbers, so they
 can't collide with anyone else's. Note types:
 
 | Type | Name | Holds |
@@ -111,12 +111,12 @@ can't collide with anyone else's. Note types:
 | 1 | `OMC_NT_PLACE` | The program's placement: shape, requirements, preferences (section 3.2). |
 | 2 | `OMC_NT_KERNELS` | A table of kernels: symbol, core kind, features, the job kind they're submitted as (section 5). |
 | 3 | `OMC_NT_FALLBACK` | The ordered list of what to do if no core fits (section 7). |
-| 4 | `OMC_NT_FACE` | Which face the program is written to: OpenMulticore native, WarpOS (`powerpc.library`), PowerUP (`ppc.library`), and later `arm.library`, `x86.library`. |
+| 4 | `OMC_NT_FACE` | Which face the program is written to: GFOpenMulticore native, WarpOS (`powerpc.library`), PowerUP (`ppc.library`), and later `arm.library`, `x86.library`. |
 | 5 | `OMC_NT_SIGNATURE` | 5 October 2026: our Kitchen's signature over a native section, which the loader checks before it runs one (section 10). |
 
 **The face note is required for hosting.** The loader hosts an ELF only if it
 carries an `OMC_NT_FACE` note naming a face that is present. An ELF without
-one is not an OpenMulticore program: the hook passes it to the original
+one is not a GFOpenMulticore program: the hook passes it to the original
 `LoadSeg` (which refuses it, as today) and `OMCRun` says so in a requester.
 With the face note and nothing else, the program is placed from the table
 above: hosted on a core of its `e_machine`, with the default fallbacks.
@@ -160,7 +160,7 @@ order: 1 `OTHERIMAGE`, 2 `CPU0`, 3 `HOST`, 4 `WAIT`, 5 `REFUSE`, 6 `CORE68K`
 A step a loader doesn't know is skipped.
 
 **`OMC_NT_FACE` (4):** version, face, least face version. Faces: 1
-OpenMulticore native, 2 WarpOS (`powerpc.library`), 3 PowerUP (`ppc.library`),
+GFOpenMulticore native, 2 WarpOS (`powerpc.library`), 3 PowerUP (`ppc.library`),
 4 `arm.library`, 5 `x86.library`. The face version is the library version the
 program was built against; an older face present counts as absent.
 
@@ -197,7 +197,7 @@ each native section is an ELF image in an `"OMC1"` debug block (type
 `OMC_NT_KERNELS` for kernels, or a whole program's image), with the kernel
 table naming what is in which section. `LoadSeg` skips debug blocks, so a
 module runs as a plain 68k program on a stock OS 3.2 or 3.1 machine with no
-OpenMulticore at all. A native section carries a signature from our Kitchen
+GFOpenMulticore at all. A native section carries a signature from our Kitchen
 (a further note, `OMC_NT_SIGNATURE`, type 5); the loader ignores a native
 section without a valid one while section 10's signing rule stands, and the
 module still runs from its 68k section.
@@ -209,7 +209,7 @@ module still runs from its 68k section.
   type, the descriptor's length in bytes and the descriptor, big-endian. A
   hunk program has no ELF header to imply a kind, so its `OMC_NT_PLACE` says
   `OMCP_KIND` 1 (68k). `LoadSeg` skips debug hunks, so a marked program still
-  loads and runs on a stock OS 3.2 or 3.1 machine with no OpenMulticore at all.
+  loads and runs on a stock OS 3.2 or 3.1 machine with no GFOpenMulticore at all.
   A tool, `OMCMark`, adds or changes the block in an existing file without
   relinking.
 - **Kernels** in a hunk program are other-architecture code it carries: either
@@ -242,7 +242,7 @@ the job kind it runs as (1 code, 2 host-native function, the maths batch
 kind). One kernel may have several entries, one per core kind (`fft_1024` for
 ARM with NEON, for a 68060, and as host-native function 14), and the
 framework takes the best one present. That is how a single program uses a
-PowerPC card on one machine, host cores in AmigaChrome on another, and CPU0
+PowerPC card on one machine, host cores in AmiCradle on another, and CPU0
 alone on a plain A1200, without any code that asks which is which.
 
 `OMC_Submit(core, &job)` from `DESIGN.md` stays for programs that want to
@@ -264,7 +264,7 @@ The same keywords in all three places:
 | `OMC_MAXCORES` | As the tag |
 | `OMC_OFF` | `YES`: run anchored on CPU0, ignore everything else, as long as the program has a 68k image that CPU0 can run (section 7's `CPU0` test); otherwise it is refused |
 
-- **Settings:** `ENVARC:OpenMulticore/Apps/<name>`, where `<name>` is the
+- **Settings:** `ENVARC:GFOpenMulticore/Apps/<name>`, where `<name>` is the
   program's file name. An installer may write one; the user may edit it.
 - **Tooltypes:** in the program's icon, or a project icon's.
 - **Command line:** `OMCRun [CORE=k] [PIN] [FALLBACK=list] program [args]`.
@@ -286,7 +286,7 @@ the list. Each step is tried until one fits:
 | `CPU0` | Run on CPU0 | The program has a 68k image or 68k kernels whose model, features and level CPU0 meets (read from `AttnFlags` and the library's own CPU check): run them on the motherboard CPU. A 68k image that needs a 68060 or an FPU that CPU0 lacks doesn't qualify, and the step is skipped. |
 | `HOST` | Host-native | Kept for old notes: a kernel's host-native function number on a host core. Since 5 October native work is a native section, so this is `OTHERIMAGE` on an x86-64 or ARM64 core. |
 | `WAIT` | Wait | Every fitting core is busy or latched: queue until one frees, or until the latch drops. |
-| `REFUSE` | Refuse | A requester says what's missing in plain words ("Foo needs a PowerPC core. None is fitted."), and in AmigaChrome where to fit one (the instance's Hardware panel). |
+| `REFUSE` | Refuse | A requester says what's missing in plain words ("Foo needs a PowerPC core. None is fitted."), and in AmiCradle where to fit one (the instance's Hardware panel). |
 
 The default list is `OTHERIMAGE, CORE68K, CPU0, REFUSE` (5 October 2026: a
 native section on a matching core, else the 68k section on a board core,
@@ -301,7 +301,7 @@ runs, or the program doesn't start.
 
 ## 8. The loader
 
-Two ways in, sharing one loader inside `openmulticore.library`
+Two ways in, sharing one loader inside `gfopenmulticore.library`
 (`OMC_LoadApp`, `OMC_UnloadApp`, `OMC_AppInfo`):
 
 - **The hook (transparent).** When the library is first opened it patches
@@ -317,7 +317,7 @@ Two ways in, sharing one loader inside `openmulticore.library`
   holding the 68k anchor, so the Shell, Workbench, `Run` and `WBStartup` all
   start it the normal way and never know. On AROS, where `LoadSeg` already
   loads ELF, the hook passes on only unmarked ELF of CPU0's own `e_machine`.
-  A native ELF that carries OpenMulticore notes still goes to `OMC_LoadApp`,
+  A native ELF that carries GFOpenMulticore notes still goes to `OMC_LoadApp`,
   which loads it with AROS's own loader and then registers its placement and
   kernel table, so `OMC_FindKernel` works for it.
 - **`OMCRun` (explicit).** The same loader, called by a command, for systems
@@ -408,7 +408,7 @@ separately, so each stands at its proposal below until we say otherwise.
    `OMC_Run68k` jobs only for 68k in the first version (the board's
    `cpu.m68k/1`), and hosted 68k as a later experiment.
 4. **The `CAPS`, `LEVEL` and `ORIGIN` registers**, as section 9 sets them
-   out, as OpenMulticore 1.1.
+   out, as GFOpenMulticore 1.1.
 5. **`SYS:Expansion` as the home of every core source** (`DESIGN.md` section
    2). We decided this on 4 October 2026; since 5 October each source is a
    board carrying the ACSV block.
@@ -428,6 +428,6 @@ Revised 5 October 2026 to `DESIGN.md` section 7's phases.
 | --- | --- | --- |
 | 1 | `OMC_Run68k` and 68k kernels on the board's 68k cores, CPU0 as the fallback | A 68k kernel runs on a board core, and on CPU0 when the board is removed |
 | 2 | Modules: the kernel table, native sections in `"OMC1"` blocks, `OMCMark`, `OMC_SubmitKernel`, the default fallback list | One module's kernel runs on a board core or on CPU0, whichever is there |
-| 3 | Native x86-64 sections, signed, in the sandboxed helper; the manifest match | A module's x86-64 kernel runs on AmigaChrome's PC and its 68k kernel elsewhere |
+| 3 | Native x86-64 sections, signed, in the sandboxed helper; the manifest match | A module's x86-64 kernel runs on AmiCradle's PC and its 68k kernel elsewhere |
 | 4 | Native ARM64 sections on the Pi | The same module's ARM64 kernel runs on the Pi |
 | Later | The loader hook, `OMCRun` and anchors for hosted native programs; PowerPC faces if PowerPC cores come | A hosted native program started from Workbench runs on its core, and from its 68k section without one |

@@ -1,5 +1,5 @@
-/* Copyright (c) 2026 AmigaChrome Team. OpenMulticore, MIT licence (LICENSE).
- * OMCTest: openmulticore.library end to end. Lists the cores, then runs one
+/* Copyright (c) 2026 AmigaChrome Team. GFOpenMulticore, MIT licence (LICENSE).
+ * OMCTest: gfopenmulticore.library end to end. Lists the cores, then runs one
  * pure 68k function (it sums an array into a written buffer and returns
  * the total) on the main CPU, on any core, and on each named core, checking
  * every answer against the main CPU's and timing them; on a board it also
@@ -20,7 +20,7 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/openmulticore.h>
+#include <proto/gfopenmulticore.h>
 
 struct Library *OpenMulticoreBase;
 
@@ -477,12 +477,12 @@ int main(void)
     for (ULONG i = 0; i < size; i++) data[i] = i * 7 + 3;
     if (nolib || !(OpenMulticoreBase = OpenLibrary((STRPTR)OPENMULTICORE_NAME, 0))) {
         int rc;
-        PutStr((STRPTR)(nolib ? "NOLIB: the library is not opened\n" : "no openmulticore.library\n"));
+        PutStr((STRPTR)(nolib ? "NOLIB: the library is not opened\n" : "no gfopenmulticore.library\n"));
         rc = no_library(size);
         FreeVec(data);
         return rc;
     }
-    Printf((STRPTR)"openmulticore.library %ld.%ld\n", (LONG)OpenMulticoreBase->lib_Version, (LONG)OpenMulticoreBase->lib_Revision);
+    Printf((STRPTR)"gfopenmulticore.library %ld.%ld\n", (LONG)OpenMulticoreBase->lib_Version, (LONG)OpenMulticoreBase->lib_Revision);
     if (!(out = AllocVec(16, MEMF_FAST | MEMF_PUBLIC)) && !(out = AllocVec(16, MEMF_PUBLIC))) return 20;
     units = OMC_CoreCount();
     Printf((STRPTR)"cores on boards: %ld\n", units);
