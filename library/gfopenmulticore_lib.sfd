@@ -1,14 +1,14 @@
-==id $Id: openmulticore_lib.sfd 0.3 (12.10.2026) $
-* "openmulticore.library"
+==id $Id: gfopenmulticore_lib.sfd 0.3 (12.10.2026) $
+* "gfopenmulticore.library"
 ==base _OpenMulticoreBase
 ==basetype struct Library *
-==libname openmulticore.library
+==libname gfopenmulticore.library
 ==bias 30
 ==public
 ==include <exec/types.h>
 ==include <dos/dos.h>
 ==include <exec/tasks.h>
-==include <libraries/openmulticore.h>
+==include <libraries/gfopenmulticore.h>
 ULONG OMC_CoreCount()()
 BOOL OMC_CoreInfo(ULONG core, struct OMCCoreInfo *info)(d0,a0)
 LONG OMC_Run68k(struct OMCJob *job)(a0)

@@ -1,8 +1,8 @@
-# OpenMulticore
+# GFOpenMulticore
 
 An open specification for presenting extra processor cores to AmigaOS, and
-`openmulticore.library`, the library programs use to run work on them.
-Anyone may build to it: AmigaChrome's runtime, a PiStorm's spare cores, an
+`gfopenmulticore.library`, the library programs use to run work on them.
+Anyone may build to it: AmiCradle's runtime, a PiStorm's spare cores, an
 FPGA board, a PowerPC or ARM card.
 
 - One Exec, on the motherboard CPU. Extra cores run jobs in shared memory,
@@ -15,38 +15,38 @@ FPGA board, a PowerPC or ARM card.
   sections. The library runs the best one present: native on a matching
   core, else 68k on a board core, else 68k on the main CPU, so the same
   file runs on a plain A1200.
-- `openmulticore.library` (this repository, on top of `openservice.device`):
+- `gfopenmulticore.library` (this repository, on top of `gfopenservice.device`):
   cores, memory grants, jobs, completion signals, `OMC_Run68k`, and batched
   maths. `powerpc.library` and
   `ppc.library` (WarpOS and PowerUP) sit on it as faces when a PowerPC core
   exists.
 - Placement: a launched program goes to the core it needs, read from its
-  module's sections and an OpenMulticore note, with overrides and fallbacks
+  module's sections and a GFOpenMulticore note, with overrides and fallbacks
   when that core is missing (`PLACEMENT.md`).
 
 The design and the specification are in `DESIGN.md`. Status, 5 October 2026:
-specified, revised for cores by instruction set; AmigaChrome is building the
+specified, revised for cores by instruction set; AmiCradle is building the
 cores board with 68k JIT cores first.
 
-## openmulticore.library 0.1
+## gfopenmulticore.library 0.1
 
 The first version (5 October 2026) is in `library/`, with its header in
-`include/libraries/openmulticore.h`, the SFD, inline and proto headers, and
+`include/libraries/gfopenmulticore.h`, the SFD, inline and proto headers, and
 `tools/omctest.c`. It runs a 68k function (`struct OMCJob`: registers,
 stack arguments, grants) on a core of a cores board through
-`openservice.device`'s `cpu.m68k/1` service, or on the main CPU when there is
+`gfopenservice.device`'s `cpu.m68k/1` service, or on the main CPU when there is
 no board, the same function either way:
 
 - `OMC_Run68k(job)`, or `OMC_Submit(job)` then `OMC_Wait`, `OMC_Check`,
   `OMC_Abort`;
 - `omj_Target`: `OMC_ANY` (the library chooses), `OMC_CPU0`, or
   `OMC_CORE(board, n)`; for programs that leave it to the library, the
-  user's `ENV:OpenMulticore/Apps/<program>` (`OMC_CORE=...`) or
-  `ENV:OpenMulticore/Core` chooses;
+  user's `ENV:GFOpenMulticore/Apps/<program>` (`OMC_CORE=...`) or
+  `ENV:GFOpenMulticore/Core` chooses;
 - `OMC_CoreCount`, `OMC_CoreInfo` (the board's cores and their load);
 - `OMC_GrantSeg`, so a strict job may run its program's own code.
 
-## openmulticore.library 0.2
+## gfopenmulticore.library 0.2
 
 0.2 (8 October 2026) adds five calls at the end of the table; 0.1 programs
 keep working, and a program checks `OMC_HAS_JOBCALLS(OpenMulticoreBase)`
@@ -59,17 +59,17 @@ before it uses them:
   on its windows and its jobs together, with no signal bit held per job.
 
 `OMC_Wait` after `OMC_Abort` now says `OMCERR_CANCEL`. The calls are
-described in `library/openmulticore.doc`; `library/openmulticore_lib.fd` is
+described in `library/gfopenmulticore.doc`; `library/gfopenmulticore_lib.fd` is
 there for other compilers. `tools/omctest.c` tests each of them.
 
 Build (for the 68040, `-m68040`): `library/build.sh` with the os32 stove and a checkout of
 `openamigaservice` beside this one. Tested on a scratch OS 3.2.3 copy with
-AmigaChrome's cores board (`a1200native -C`): the main CPU, any core, a fault
+AmiCradle's cores board (`a1200native -C`): the main CPU, any core, a fault
 returned as a status, and a strict job all pass. Jobs aimed at a named core
 wait for the board to accept the core number (request bits 24 to 28), which
 the AC090 work is adding.
 
-## openmulticore.library 0.3
+## gfopenmulticore.library 0.3
 
 0.3 (12 October 2026) adds two calls at the end of the table; 0.1 and 0.2
 programs keep working, and a program checks `OMC_HAS_RANGE(OpenMulticoreBase)`
@@ -87,7 +87,7 @@ size, throughput as jobs and as ranges on 1 to all cores, and the main
 CPU's speed while every core works (`DESIGN.md` section 4 has the numbers).
 `library/build.sh` builds all three.
 
-## openmulticore.library 0.4
+## gfopenmulticore.library 0.4
 
 0.4 (12 October 2026) follows the Team's decision on what a job may read.
 Permissive stays the default: a job may read any Fast RAM and ROM.
@@ -95,49 +95,49 @@ Permissive stays the default: a job may read any Fast RAM and ROM.
 applications. `OMCF_PAGES`, with `OMCF_STRICT`, adds page grants: each
 execute grant (a program's hunks, from `OMC_GrantSeg`) may be read and
 run by its whole 4 KB pages, so strict code runs at full speed. On a
-board that takes them (AmigaChrome's cores board from 12 October: INFO's
+board that takes them (AmiCradle's cores board from 12 October: INFO's
 bit 17) the library sends version 2 run blocks; on any other board it
 sends version 1, as 0.3 did, and an `OMCF_PAGES` job is plain strict.
 0.3 programs and older boards keep working unchanged. `DESIGN.md` section 4
-has the numbers, and AmigaChrome's `CORES_BOARD.md` section 0e the board's side.
+has the numbers, and AmiCradle's `CORES_BOARD.md` section 0e the board's side.
 
-## openmulticore.library 0.5
+## gfopenmulticore.library 0.5
 
 0.5 (21 October 2026) makes waiting for a short job cheap, with no new
-calls. AmigaChrome's cores board now takes a job as its doorbell is
+calls. AmiCradle's cores board now takes a job as its doorbell is
 written and publishes a finished one as soon as the board is read, and
 says so in INFO's bit 18 (the fast path, `CORES_BOARD.md` section 0f).
 On such a board, and only there, `OMC_Run68k`, `OMC_Wait` and
 `OMC_RunRange` poll the board for up to 150 microseconds before they
 sleep in `Wait()`, so a short job comes back without a task switch.
-`ENV:OpenMulticore/PollMicros` (read as the connection is made) changes
+`ENV:GFOpenMulticore/PollMicros` (read as the connection is made) changes
 the time, and 0 turns polling off, for measuring. Any other board, a
 Cradle on the LAN, and the main CPU with no board (a real 68040) are
 exactly as in 0.4.
 
-## openmulticore.library 0.6
+## gfopenmulticore.library 0.6
 
 0.6 (1 November 2026) stops reading the user's settings for every job.
 A job left to the library used to read two variables
-(`ENV:OpenMulticore/Apps/<program>` and `ENV:OpenMulticore/Core`), each a
+(`ENV:GFOpenMulticore/Apps/<program>` and `ENV:GFOpenMulticore/Core`), each a
 few packets to ENV:'s handler, before it started. 0.6 keeps what it read
-and asks DOS to tell it when anything in `ENV:OpenMulticore` or its
+and asks DOS to tell it when anything in `ENV:GFOpenMulticore` or its
 `Apps` drawer changes; the next job after a change reads them again. A
 plain task (not a process) still reads them for each job. No call changes.
 
 ## Licence and credit
 
-OpenMulticore is free software under the MIT licence (`LICENSE`,
+GFOpenMulticore is free software under the MIT licence (`LICENSE`,
 Copyright (c) 2026 AmigaChrome Team): anyone may use it, change it, fork it and
 ship it, commercially too, and hardware makers may implement the
 specification freely. The licence's one condition keeps the credit: the
 copyright notice and the licence text stay with every copy and fork. We also
 ask, as a courtesy rather than a condition, that a fork, a port or an
-implementation say it is based on OpenMulticore by the AmigaChrome Team.
+implementation say it is based on GFOpenMulticore by the AmigaChrome Team.
 
-OpenMulticore was created by the AmigaChrome Team, for
-AmigaChrome.
+GFOpenMulticore was created by the AmigaChrome Team, for
+AmiCradle.
 
 ## Contributors
 
-OpenMulticore is created and maintained by [SacredTrees](https://github.com/SacredTrees) with The AmigaChrome Team, copyright AmigaChrome Team. Everyone whose work it includes is credited in [`CONTRIBUTORS.md`](CONTRIBUTORS.md).
+GFOpenMulticore is created and maintained by [SacredTrees](https://github.com/SacredTrees) with The AmigaChrome Team, copyright AmigaChrome Team. Everyone whose work it includes is credited in [`CONTRIBUTORS.md`](CONTRIBUTORS.md).

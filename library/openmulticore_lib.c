@@ -1,13 +1,13 @@
-/* Copyright (c) 2026 AmigaChrome Team. OpenMulticore, MIT licence (LICENSE).
+/* Copyright (c) 2026 AmigaChrome Team. GFOpenMulticore, MIT licence (LICENSE).
  * SPDX-License-Identifier: MIT
  *
- * openmulticore.library 0.2 (DESIGN.md sections 0 and 4). It runs a 68k
- * function on a core of a cores board (AmigaChrome's, an AmigaChrome Team $DA15
+ * gfopenmulticore.library 0.2 (DESIGN.md sections 0 and 4). It runs a 68k
+ * function on a core of a cores board (AmiCradle's, an AmigaChrome Team $DA15
  * board carrying the ACSV block, CLASS 2, product 7) through
- * openservice.device's cpu.m68k/1 service, or on the main CPU when there is
+ * gfopenservice.device's cpu.m68k/1 service, or on the main CPU when there is
  * no board, the same function either way. A caller may name the core
  * (OMC_CORE), ask for the main CPU (OMC_CPU0) or leave it to the library
- * (OMC_ANY); the user's settings in ENV:OpenMulticore choose for programs
+ * (OMC_ANY); the user's settings in ENV:GFOpenMulticore choose for programs
  * that leave it (PLACEMENT.md section 6). Modules and native sections come
  * later. 0.2 adds, at the end of the table: OMC_JobInit, OMC_AddGrant
  * (the grant rules checked as each is added), OMC_AllocGrant and
@@ -26,9 +26,9 @@
  * path (bit 18): such a board publishes a completion as soon as it is read
  * while one waits, so a short job is collected without a task switch.
  * Every other board, the LAN and the main CPU are as in 0.4.
- * 0.6 keeps the ENV:OpenMulticore settings a job reads (Core, Apps/<program>)
+ * 0.6 keeps the ENV:GFOpenMulticore settings a job reads (Core, Apps/<program>)
  * instead of reading two variables for every job, and reads them again when
- * DOS notification says ENV:OpenMulticore or its Apps drawer changed.
+ * DOS notification says ENV:GFOpenMulticore or its Apps drawer changed.
  *
  * Built bare by library/build.sh (no startup code, no C library).
  */
@@ -53,15 +53,15 @@
 #include <proto/expansion.h>
 #include <proto/timer.h>
 
-#include "../include/libraries/openmulticore.h"
-#include <devices/openservice.h>   /* openamigaservice's include/ */
+#include "../include/libraries/gfopenmulticore.h"
+#include <devices/gfopenservice.h>   /* openamigaservice's include/ */
 #include <openservice.h>
 
 #define REG(r, decl) register decl __asm(#r)   /* bebbo gcc: an argument in a register */
 #define LIB_VERSION 0
 #define LIB_REVISION 6
 
-#define AMIGACHROME_MFR        0xDA15
+#define AMICRADLE_MFR        0xDA15
 #define CORES_PRODUCT 7
 #define REG_UNITS     0x24
 #define REG_ISAS      0x28
@@ -75,7 +75,7 @@
 #define INFO_RANGE (1UL << 16)      /* INFO's aux: the board has RANGE */
 #define INFO_RUNBLOCK2 (1UL << 17)  /* INFO's aux: the board takes version 2 run blocks (12 Oct 2026) */
 #define INFO_FAST (1UL << 18)       /* INFO's aux: the board's fast path: a read of it publishes a waiting completion (21 Oct 2026) */
-#define POLL_MICROS 150             /* 0.5: how long a waiting caller polls a fast board (ENV:OpenMulticore/PollMicros) */
+#define POLL_MICROS 150             /* 0.5: how long a waiting caller polls a fast board (ENV:GFOpenMulticore/PollMicros) */
 #define OPT1_PERMISSIVE 2           /* version 1 options: strict unless this */
 #define OPT2_STRICT 1               /* version 2 options: permissive unless this */
 #define OPT2_PAGES  4               /* with OPT2_STRICT: execute grants of the list by whole 4 KB pages */
@@ -112,19 +112,19 @@ struct OMCBase {
     struct Library *dos;
     /* 0.3: the connection every job's request is a copy of (conn_get) */
     struct SignalSemaphore sem;
-    struct OSRequest *conn;         /* openservice.device open, cpu.m68k/1's handle in os_Service */
+    struct OSRequest *conn;         /* gfopenservice.device open, cpu.m68k/1's handle in os_Service */
     LONG conn_state;                /* 0 not tried yet, 1 open, -1 no service (tried again after the last close) */
     ULONG where;                    /* OMCW_BOARD or OMCW_LAN */
     ULONG units, info;              /* INFO's result and aux (0 when it did not answer) */
-    ULONG range_max;                /* ENV:OpenMulticore/RangeCores when the connection was made (0: not set) */
+    ULONG range_max;                /* ENV:GFOpenMulticore/RangeCores when the connection was made (0: not set) */
     /* 0.5: the fast path, when INFO has it and the board is this machine's */
     volatile UBYTE *fast;           /* the board's registers, or NULL: no polling, as 0.4 */
     ULONG poll_ticks;               /* how long to poll, in E-clock ticks */
     struct timerequest *timer;      /* timer.device, opened for ReadEClock */
-    /* 0.6: the ENV:OpenMulticore settings a job reads, kept until DOS notification says they changed */
+    /* 0.6: the ENV:GFOpenMulticore settings a job reads, kept until DOS notification says they changed */
     struct SignalSemaphore envsem;
     struct MsgPort envport;         /* PA_IGNORE: the notifications wait here, nobody is signalled */
-    struct NotifyRequest envnr[2];  /* ENV:OpenMulticore, ENV:OpenMulticore/Apps */
+    struct NotifyRequest envnr[2];  /* ENV:GFOpenMulticore, ENV:GFOpenMulticore/Apps */
     LONG env_state;                 /* 0 not watched, 1 watched, -1 could not watch (tried again after the last close) */
     UBYTE env_core_ok;              /* env_core is Core's value */
     ULONG env_core;
@@ -139,7 +139,7 @@ struct Device *TimerBase;           /* ReadEClock's (0.5): set while the connect
 int start(void) { return -1; }      /* run as a program: nothing (stays first in the file) */
 
 static const char lib_name[] = OPENMULTICORE_NAME;
-static const char lib_id[] = "openmulticore.library 0.6 (01.11.2026) OpenMulticore, AmigaChrome Team\r\n";
+static const char lib_id[] = "gfopenmulticore.library 0.6 (01.11.2026) GFOpenMulticore, AmigaChrome Team\r\n";
 static const char service_name[] = "cpu.m68k/1";
 
 static struct Library *lib_init(REG(d0, struct OMCBase *base), REG(a0, BPTR seglist), REG(a6, struct ExecBase *sys));
@@ -242,7 +242,7 @@ static volatile UBYTE *cores_board(void)
     struct ConfigDev *cd;
     volatile UBYTE *b = NULL;
     if (!ExpansionBase) return NULL;
-    if ((cd = FindConfigDev(NULL, AMIGACHROME_MFR, CORES_PRODUCT)) && cd->cd_BoardAddr && *(volatile ULONG *)cd->cd_BoardAddr == OPENSERVICE_MAGIC)
+    if ((cd = FindConfigDev(NULL, AMICRADLE_MFR, CORES_PRODUCT)) && cd->cd_BoardAddr && *(volatile ULONG *)cd->cd_BoardAddr == OPENSERVICE_MAGIC)
         b = cd->cd_BoardAddr;
     CloseLibrary(ExpansionBase);
     return b;
@@ -264,7 +264,7 @@ static void fast_open(struct OMCBase *base)
     if (!(base->info & INFO_FAST) || base->where != OMCW_BOARD) return;
     {
         char buf[16];
-        if (base->dos && GetVar((STRPTR)"OpenMulticore/PollMicros", (STRPTR)buf, sizeof buf, GVF_GLOBAL_ONLY) > 0) {
+        if (base->dos && GetVar((STRPTR)"GFOpenMulticore/PollMicros", (STRPTR)buf, sizeof buf, GVF_GLOBAL_ONLY) > 0) {
             micros = 0;
             for (char *p = buf; *p >= '0' && *p <= '9'; p++) micros = micros * 10 + (ULONG)(*p - '0');
         }
@@ -313,7 +313,7 @@ static void board_poll(struct OMCBase *base, struct IORequest *io)
 
 /* ---- the kept connection (0.3) ------------------------------------------------- */
 
-/* openservice.device opened and cpu.m68k/1 found once, by the first job that
+/* gfopenservice.device opened and cpu.m68k/1 found once, by the first job that
  * needs a board, with INFO asked: 1, or -1 when there is no service (asked
  * again after the last program closes the library). Every job's request is
  * a copy of this one (io_Device, io_Unit, the handle): 0.2 opened the
@@ -349,7 +349,7 @@ static LONG conn_get(struct OMCBase *base)
                 base->range_max = 0;
                 {
                     char buf[16];
-                    if (base->dos && GetVar((STRPTR)"OpenMulticore/RangeCores", (STRPTR)buf, sizeof buf, GVF_GLOBAL_ONLY) > 0)
+                    if (base->dos && GetVar((STRPTR)"GFOpenMulticore/RangeCores", (STRPTR)buf, sizeof buf, GVF_GLOBAL_ONLY) > 0)
                         for (char *p = buf; *p >= '0' && *p <= '9'; p++) base->range_max = base->range_max * 10 + (ULONG)(*p - '0');
                 }
                 fast_open(base);
@@ -393,7 +393,7 @@ static void conn_close(struct OMCBase *base)
     if (port) DeleteMsgPort(port);
 }
 
-/* ---- the board, through openservice.device ------------------------------------- */
+/* ---- the board, through gfopenservice.device ------------------------------------- */
 
 /* A port on the signal OMC_SetSignal gave: no signal bit of its own. */
 static struct MsgPort *signal_port(struct OMCJob *job)
@@ -594,7 +594,7 @@ static LONG board_send(struct OMCJob *job, struct OMCBase *base, ULONG core)
 }
 
 /* The cores a range may use at once: the board's, capped by
- * ENV:OpenMulticore/RangeCores when that was set as the connection was
+ * ENV:GFOpenMulticore/RangeCores when that was set as the connection was
  * made (for measuring), at most RANGE_MAXSLOTS. */
 static ULONG range_cores(struct OMCBase *base)
 {
@@ -835,7 +835,7 @@ static ULONG parse_target(const char *s)
 static ULONG read_app(const char *name)
 {
     char path[96], buf[160];
-    const char *pre = "OpenMulticore/Apps/";
+    const char *pre = "GFOpenMulticore/Apps/";
     int i = 0, j = 0;
     while (pre[j]) path[i++] = pre[j++];
     for (j = 0; name[j] && i < 95; ) path[i++] = name[j++];
@@ -853,11 +853,11 @@ static ULONG read_app(const char *name)
 static ULONG read_core(void)
 {
     char buf[160];
-    if (GetVar((STRPTR)"OpenMulticore/Core", (STRPTR)buf, sizeof buf, GVF_GLOBAL_ONLY) > 0) return parse_target(buf);
+    if (GetVar((STRPTR)"GFOpenMulticore/Core", (STRPTR)buf, sizeof buf, GVF_GLOBAL_ONLY) > 0) return parse_target(buf);
     return OMC_ANY;
 }
 
-/* Our notifications on ENV:OpenMulticore and its Apps drawer ended, and any
+/* Our notifications on ENV:GFOpenMulticore and its Apps drawer ended, and any
  * of their messages given back. */
 static void env_unwatch(struct OMCBase *base)
 {
@@ -875,7 +875,7 @@ static void env_unwatch(struct OMCBase *base)
  * reading is not missed; and again so an Apps drawer made since is watched. */
 static LONG env_watch(struct OMCBase *base)
 {
-    static const char *const names[2] = { "ENV:OpenMulticore", "ENV:OpenMulticore/Apps" };
+    static const char *const names[2] = { "ENV:GFOpenMulticore", "ENV:GFOpenMulticore/Apps" };
     if (base->env_state < 0) return 0;
     if (base->env_state == 1 && !base->envport.mp_MsgList.lh_Head->ln_Succ) return 1;   /* nothing changed */
     env_unwatch(base);
@@ -912,10 +912,10 @@ static void env_close(struct OMCBase *base)
 }
 
 /* The user's choice for this program (PLACEMENT.md section 6), for jobs that
- * leave it to the library: ENV:OpenMulticore/Apps/<program>, a line
- * OMC_CORE=..., else ENV:OpenMulticore/Core. 0.6 keeps both (Core, and
+ * leave it to the library: ENV:GFOpenMulticore/Apps/<program>, a line
+ * OMC_CORE=..., else ENV:GFOpenMulticore/Core. 0.6 keeps both (Core, and
  * Apps/<program> for the last ENV_APPS programs) while DOS notification says
- * nothing in ENV:OpenMulticore changed: 0.5 read two variables, each a few
+ * nothing in ENV:GFOpenMulticore changed: 0.5 read two variables, each a few
  * packets to ENV:'s handler, for every job. A plain task (no notification
  * without a process) reads them each time, as 0.5. */
 static ULONG user_target(struct OMCBase *base)

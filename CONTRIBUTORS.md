@@ -2,11 +2,11 @@
 
 ## Creator and maintainer
 
-- **SacredTrees** ([@SacredTrees](https://github.com/SacredTrees)): created OpenMulticore, designs it and maintains it.
+- **SacredTrees** ([@SacredTrees](https://github.com/SacredTrees)): created GFOpenMulticore, designs it and maintains it.
 
 ## The AmigaChrome team
 
-We are The AmigaChrome Team, who build OpenMulticore alongside SacredTrees:
+We are The AmigaChrome Team, who build GFOpenMulticore alongside SacredTrees:
 
 - **Agnus**, our coordinator, who keeps every thread moving.
 - **Thufir**, **Kynes** and **Galen**, who started the work on SacredTrees's x86 cores.
@@ -14,7 +14,7 @@ We are The AmigaChrome Team, who build OpenMulticore alongside SacredTrees:
 
 ## Copyright holder
 
-The OpenMulticore specification, `openmulticore.library`, its headers, tools and documents are
+The GFOpenMulticore specification, `gfopenmulticore.library`, its headers, tools and documents are
 Copyright (c) 2026 AmigaChrome Team, released under the MIT licence (`LICENSE`).
 
 Everything in this repository is our own work.
