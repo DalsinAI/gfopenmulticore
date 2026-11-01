@@ -1,4 +1,4 @@
-/* Copyright (c) 2026 AmigaChrome Team. GFOpenMulticore, MIT licence (LICENSE).
+/* Copyright (c) 2026 AmiCradle Team. GFOpenMulticore, MIT licence (LICENSE).
  * OMCBench: what work is worth sending to a cores board, measured
  * (DESIGN.md section 5, W3). Four tables:
  *   1. the cost of an empty job: on the main CPU; on a board, one at a time
@@ -16,7 +16,7 @@
  * PAGES (with STRICT): strict with page grants (0.4), the hunks read and run
  * by their whole 4 KB pages.
  *   OMCBench [JOBS n] [ITEMS n] [WORK n] [STRICT [PAGES]]
- * MIT, Copyright (c) 2026 AmigaChrome Team. */
+ * MIT, Copyright (c) 2026 AmiCradle Team. */
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <dos/dos.h>

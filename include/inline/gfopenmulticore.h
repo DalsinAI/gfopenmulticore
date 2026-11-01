@@ -1,4 +1,4 @@
-/* Copyright (c) 2026 AmigaChrome Team. GFOpenMulticore, MIT licence (LICENSE).
+/* Copyright (c) 2026 AmiCradle Team. GFOpenMulticore, MIT licence (LICENSE).
  * SPDX-License-Identifier: MIT
  * Inline calls for bebbo's m68k-amigaos-gcc, from library/gfopenmulticore_lib.sfd. */
 #ifndef _INLINE_OPENMULTICORE_H

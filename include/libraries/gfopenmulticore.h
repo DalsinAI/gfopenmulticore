@@ -4,7 +4,7 @@
  * OMC_SetSignal; 0.3 adds OMC_SubmitRange and OMC_RunRange; 0.4 adds
  * OMCF_PAGES; 0.5 polls a fast board briefly before a wait sleeps, with no
  * new calls (library/gfopenmulticore.doc).
- * MIT, Copyright (c) 2026 AmigaChrome Team. */
+ * MIT, Copyright (c) 2026 AmiCradle Team. */
 #ifndef LIBRARIES_OPENMULTICORE_H
 #define LIBRARIES_OPENMULTICORE_H
 

@@ -1,4 +1,4 @@
-<!-- GFOpenMulticore's design and specification, written in AmiCradle's development tree on 4 October 2026. Copyright (c) 2026 AmigaChrome Team, MIT licence (LICENSE). -->
+<!-- GFOpenMulticore's design and specification, written in AmiCradle's development tree on 4 October 2026. Copyright (c) 2026 AmiCradle Team, MIT licence (LICENSE). -->
 
 # GFOpenMulticore
 
@@ -10,7 +10,7 @@ We, 4 October 2026: "we should add GFOpenMulticore for the autoconfig spec
 and library"; the product is GFOpenMulticore and its repository
 `DalsinAI/openamigamulticore` (Our naming: products drop "Amiga", repos
 carry it). Like every project we call Open, it is MIT, Copyright (c) 2026
-AmigaChrome Team, with the credit kept.
+AmiCradle Team, with the credit kept.
 
 It builds on the ACMP note of 28 September 2026 (capsule *A1200 Shared Memory
 and ACMP*), which settled how a second CPU joins an A1200 without a second
@@ -35,8 +35,8 @@ option, but native execution is possible too".
   also run native code for its own instruction set: x86-64 on AmiCradle's
   PC, ARM64 on the Pi appliance and on a PiStorm's spare cores.
 - **Cores sit on AutoConfig boards that carry the ACSV block**, the one
-  protocol AmiCradle's services card uses (AmigaChrome Team $DA15, MAGIC `'ACSV'`),
-  with CLASS 2 for cores. AmigaChrome Team's cores board is product 7. Two registers
+  protocol AmiCradle's services card uses (AmiCradle Team $DA15, MAGIC `'ACSV'`),
+  with CLASS 2 for cores. AmiCradle Team's cores board is product 7. Two registers
   follow CLASS: UNITS at `$24` (how many cores; every one runs 68k) and ISAS
   at `$28` (bit 0 m68k, always set; bit 1 x86-64; bit 2 ARM64). The board's
   directory lists `cpu.m68k/1`, plus `cpu.x86_64/1` or `cpu.arm64/1` when the
@@ -121,7 +121,7 @@ Drivers come in two kinds:
   icon carries `PRODUCT=manufacturer/product`, and `BindDrivers` starts the
   driver when that board is present and unclaimed, the standard Amiga way.
   The driver claims the board (clears `CDF_CONFIGME`) and registers its
-  cores. GFOpenMulticore's own reference board is AmigaChrome Team $DA15, product 7 (the
+  cores. GFOpenMulticore's own reference board is AmiCradle Team $DA15, product 7 (the
   number ACMP reserved), IO, 64 KB, with the driver `GFOpenMulticore`
   (`PRODUCT=55829/7`). Another maker's board ships its own driver under its own
   manufacturer and product; the library never reads a board's registers
@@ -162,7 +162,7 @@ Risks on a stock OS 3.2.3:
 
 ## 3. The autoconfig board
 
-**Superseded on 5 October 2026 by the ACSV board (section 0).** AmigaChrome Team's
+**Superseded on 5 October 2026 by the ACSV board (section 0).** AmiCradle Team's
 cores board and any other maker's now present the ACSV block with CLASS 2,
 UNITS and ISAS, and their services in its directory (`CORES_BOARD.md` in
 AmiCradle has the registers, rings and records). The register map below

@@ -128,16 +128,16 @@ plain task (not a process) still reads them for each job. No call changes.
 ## Licence and credit
 
 GFOpenMulticore is free software under the MIT licence (`LICENSE`,
-Copyright (c) 2026 AmigaChrome Team): anyone may use it, change it, fork it and
+Copyright (c) 2026 AmiCradle Team): anyone may use it, change it, fork it and
 ship it, commercially too, and hardware makers may implement the
 specification freely. The licence's one condition keeps the credit: the
 copyright notice and the licence text stay with every copy and fork. We also
 ask, as a courtesy rather than a condition, that a fork, a port or an
-implementation say it is based on GFOpenMulticore by the AmigaChrome Team.
+implementation say it is based on GFOpenMulticore by the AmiCradle Team.
 
-GFOpenMulticore was created by the AmigaChrome Team, for
+GFOpenMulticore was created by the AmiCradle Team, for
 AmiCradle.
 
 ## Contributors
 
-GFOpenMulticore is created and maintained by [SacredTrees](https://github.com/SacredTrees) with The AmigaChrome Team, copyright AmigaChrome Team. Everyone whose work it includes is credited in [`CONTRIBUTORS.md`](CONTRIBUTORS.md).
+GFOpenMulticore is created and maintained by [SacredTrees](https://github.com/SacredTrees) with The AmiCradle Team, copyright AmiCradle Team. Everyone whose work it includes is credited in [`CONTRIBUTORS.md`](CONTRIBUTORS.md).
