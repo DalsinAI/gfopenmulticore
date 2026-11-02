@@ -54,7 +54,7 @@
 #include <proto/timer.h>
 
 #include "../include/libraries/gfopenmulticore.h"
-#include <devices/gfopenservice.h>   /* openamigaservice's include/ */
+#include <devices/gfopenservice.h>   /* gfopenservice's include/ */
 #include <openservice.h>
 
 #define REG(r, decl) register decl __asm(#r)   /* bebbo gcc: an argument in a register */
