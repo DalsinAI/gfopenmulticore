@@ -27,7 +27,7 @@
 #include <proto/dos.h>
 #include <proto/timer.h>
 #include <proto/gfopenmulticore.h>
-#include <devices/gfopenservice.h>   /* openamigaservice's include/: 0.2's per-job connection, timed alone */
+#include <devices/gfopenservice.h>   /* gfopenservice's include/: 0.2's per-job connection, timed alone */
 
 struct Library *OpenMulticoreBase;
 struct Device *TimerBase;

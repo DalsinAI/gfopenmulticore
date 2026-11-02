@@ -63,7 +63,7 @@ described in `library/gfopenmulticore.doc`; `library/gfopenmulticore_lib.fd` is
 there for other compilers. `tools/omctest.c` tests each of them.
 
 Build (for the 68040, `-m68040`): `library/build.sh` with the os32 stove and a checkout of
-`openamigaservice` beside this one. Tested on a scratch OS 3.2.3 copy with
+`gfopenservice` beside this one. Tested on a scratch OS 3.2.3 copy with
 AmiCradle's cores board (`a1200native -C`): the main CPU, any core, a fault
 returned as a status, and a strict job all pass. Jobs aimed at a named core
 wait for the board to accept the core number (request bits 24 to 28), which

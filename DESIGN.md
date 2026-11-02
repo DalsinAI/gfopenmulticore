@@ -8,7 +8,7 @@ runtime, a PiStorm's spare cores, an FPGA board, a PowerPC or ARM card.
 
 We, 4 October 2026: "we should add GFOpenMulticore for the autoconfig spec
 and library"; the product is GFOpenMulticore and its repository
-`DalsinAI/openamigamulticore` (Our naming: products drop "Amiga", repos
+`DalsinAI/gfopenmulticore` (Our naming: products drop "Amiga", repos
 carry it). Like every project we call Open, it is MIT, Copyright (c) 2026
 AmiCradle Team, with the credit kept.
 
@@ -71,7 +71,7 @@ option, but native execution is possible too".
 - **A core source is a board.** Each source in `SYS:Expansion` (section 2) is
   a board carrying the ACSV block, whatever runs behind it.
 - **`gfopenmulticore.library` lives in this repository**: guest code on top of
-  `gfopenservice.device` (`DalsinAI/openamigaservice`), which finds the boards
+  `gfopenservice.device` (`DalsinAI/gfopenservice`), which finds the boards
   and carries the messages, locally and to a paired Cradle over the LAN.
 
 What it changes below: section 3's register map is replaced by the ACSV
